@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="8a79c800-ecce-4b09-a8c4-4909aa97ccc1" >
+		<email:smtp-connection host="smtp.gmail.com" port="587" user="delltoy97@gmail.com" password="ksevvktxdvpkfyia" >
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<flow name="excel-csv-on-one-implementFlow" doc:id="14277ff3-12c3-43e2-a24f-24564d761e10" >
+		<scheduler doc:name="Scheduler" doc:id="5329a1ec-263a-491a-b8f5-64ba226775b4" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<file:read doc:name="Read" doc:id="513848d1-7280-4852-94be-36d3336c8f47" path="D:\MOM\in\file.xml"/>
+		<set-variable value="#[payload]" doc:name="reuse space for inputs" doc:id="34350edd-1f60-4955-be5d-e8b25aff6a2e" variableName="input"/>
+		<ee:transform doc:name="Transform Message" doc:id="2f537339-cdfd-46eb-afe1-08730212c8ae" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xlsx
+---
+{
+	Sheet1: payload.MATREQ_MAINSAVER.*MATREQ_MAINSAVER map ( mATREQMAINSAVER , indexOfMATREQMAINSAVER ) -> {
+		name: mATREQMAINSAVER.REQUESTED_BY_NAME,
+		date: mATREQMAINSAVER.REQUIRED_DATE,
+		"line number": mATREQMAINSAVER.MR_LINE,
+		quantity: mATREQMAINSAVER.WO_NUMBER,
+		WO: mATREQMAINSAVER.STOCK_NO,
+		ID: mATREQMAINSAVER.REQUESTED_BY_ID,
+		"Stock number": mATREQMAINSAVER.ITEM_QTY as String,
+		"Req Number": mATREQMAINSAVER.REQUEST_NO
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="a8460fdc-3057-466b-9300-e7cc350bddf2" path="D:\MOM\vars\wel\Excel.xlsx"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="55b795ca-6dba-43bd-bd10-4e20d905d56f" variableName="excel"/>
+		<set-payload doc:name="Set Payload" doc:id="70e3d583-e440-49c3-9cdc-2e06e8989593" value='#[vars."input"]'/>
+		<ee:transform doc:name="Transform Message" doc:id="b21a81f7-1b90-4716-86c4-5c133554e391" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+payload.MATREQ_MAINSAVER.*MATREQ_MAINSAVER map ( mATREQMAINSAVER , indexOfMATREQMAINSAVER ) -> {
+	ID: mATREQMAINSAVER.REQUESTED_BY_ID default "",
+	Name: mATREQMAINSAVER.REQUESTED_BY_NAME default "",
+	Quantity: mATREQMAINSAVER.ITEM_QTY default 0,
+	"Line Number": mATREQMAINSAVER.MR_LINE default 0,
+	WO: mATREQMAINSAVER.WO_NUMBER default "",
+	Date: mATREQMAINSAVER.REQUIRED_DATE default 0,
+	UOM: mATREQMAINSAVER.UOM default "",
+	"Stock Number": mATREQMAINSAVER.STOCK_NO default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="461d21e1-d726-4a15-be87-ce6d06318f99" path="D:\MOM\vars\wel\output\file.CSV"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="60bccd93-ef46-42d7-937d-0d39be1e30d1" variableName="csvfileinvariable"/>
+		<email:send doc:name="Send" doc:id="35b107c4-4b48-43ca-bc71-3c483052ccf1" config-ref="Email_SMTP" fromAddress="delltoy97@gmail.com" subject="MULESOFT - TRAINING">
+			<email:to-addresses >
+				<email:to-address value="seetharaman3109@gmail.com" />
+			</email:to-addresses>
+			<email:cc-addresses >
+			</email:cc-addresses>
+			<email:body>
+				<email:content ><![CDATA[welcome to the page
+]]></email:content>
+			</email:body>
+			<email:attachments ><![CDATA[#[{
+	'input.csv' : vars.csvfileinvariable,
+	'input.xlsx': vars.excel,
+   
+}]]]></email:attachments>
+		</email:send>
+		<logger level="INFO" doc:name="Logger" doc:id="971e024b-4a4f-468c-b7c2-63dbbf5d76ea" message="Email sent successfully.....!!!"/>
+	</flow>
+</mule>

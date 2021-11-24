@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="xml" format="xml">
+      <types:example format="xml" element="MATREQ_MAINSAVER" location="examples/file.xml"/>
+    </types:type>
+    <types:type name="excel" format="excel">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type excel = {|
+  Sheet1?: Array<{|    name: String,     date: Number,     "line number": Number,     quantity: String,     WO: String,     ID: String,     "Stock number": String,     "Req Number": Number  |}>
+|}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="csv" format="csv">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type csv = Array<{|  ID: String,   Name: String,   Quantity: Number,   "Line Number": Number,   WO: String,   Date: Number,   UOM: String,   "Stock Number": String|}> {"isQuotedString": "false",
+"header": "true",
+"headerLineNumber": "0"}
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#2f537339-cdfd-46eb-afe1-08730212c8ae">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="xml"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="excel"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#b21a81f7-1b90-4716-86c4-5c133554e391">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="xml"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="csv"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>
